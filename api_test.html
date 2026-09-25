@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محلل وملخص الملفات بالذكاء الاصطناعي</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { color: #333; margin-bottom: 20px; }
+        input[type="file"], input[type="password"] { margin: 15px 0; display: block; width: 100%; padding: 10px; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc; }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #218838; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        .result-box {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-right: 5px solid #007bff;
+            border-radius: 4px;
+            text-align: right;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .loading { color: #007bff; font-weight: bold; display: none; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📝 محلل ومُلخّص الملفات الذكي</h1>
+    <p>قم بإدخال مفتاح الـ API الخاص بك ورفع ملف نصي للحصول على ملخص فوري.</p>
+    
+    <!-- خانة آمنة لإدخال المفتاح يدوياً عند الاستخدام -->
+    <input type="password" id="apiKeyInput" placeholder="أدخل مفتاح Gemini API هنا...">
+    
+    <input type="file" id="fileInput" accept=".txt,.js,.html,.css,.json,.md">
+    <button id="uploadBtn">تحليل وتلخيص الملف ✨</button>
+    
+    <div id="loadingStatus" class="loading">جاري قراءة الملف وتحليله عبر Gemini AI... الرجاء الانتظار...</div>
+    
+    <div id="resultContainer" style="display: none;">
+        <h3>📊 ملخص الذكاء الاصطناعي:</h3>
+        <div id="resultBox" class="result-box"></div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('uploadBtn').addEventListener('click', async function() {
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const loadingStatus = document.getElementById('loadingStatus');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultBox = document.getElementById('resultBox');
+
+        const USER_API_KEY = apiKeyInput.value.trim();
+
+        // التأكد من إدخال المفتاح
+        if (!USER_API_KEY) {
+            alert('الرجاء إدخال مفتاح الـ API الخاص بك أولاً!');
+            return;
+        }
+
+        // التأكد من اختيار ملف
+        if (fileInput.files.length === 0) {
+            alert('الرجاء اختيار ملف أولاً!');
+            return;
+        }
+
+        const file = fileInput.files[0]; 
+        
+        uploadBtn.disabled = true;
+        loadingStatus.style.display = 'block';
+        resultContainer.style.display = 'none';
+
+        const reader = new FileReader();
+        
+        reader.onload = async function(e) {
+            const fileContent = e.target.result;
+
+            try {
+                const url = `https://googleapis.com{USER_API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `قم بقراءة النص التالي التابع لملف تم رفعه، وحلله ثم أعطني ملخصاً شاملاً وواضحاً له باللغة العربية:\n\n${fileContent}`
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
+
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                resultBox.textContent = aiResponse;
+                resultContainer.style.display = 'block';
+
+            } catch (error) {
+                console.error("حدث خطأ:", error);
+                alert('حدث خطأ أثناء معالجة الـ AI: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+                loadingStatus.style.display = 'none';
+            }
+        };
+
+        reader.readAsText(file);
+    });
+</script>
+
+</body>
+</html>
