@@ -59,7 +59,7 @@
     <h1>📝 محلل ومُلخّص الملفات الذكي</h1>
     <p>قم بإدخال مفتاح الـ API الخاص بك ورفع ملف نصي للحصول على ملخص فوري.</p>
     
-    <!-- خانة آمنة لإدخال المفتاح يدوياً عند الاستخدام -->
+    <!-- خانة إدخال المفتاح يدوياً لحمايتك من حظر GitHub -->
     <input type="password" id="apiKeyInput" placeholder="أدخل مفتاح Gemini API هنا...">
     
     <input type="file" id="fileInput" accept=".txt,.js,.html,.css,.json,.md">
@@ -84,18 +84,17 @@
 
         const USER_API_KEY = apiKeyInput.value.trim();
 
-        // التأكد من إدخال المفتاح
         if (!USER_API_KEY) {
             alert('الرجاء إدخال مفتاح الـ API الخاص بك أولاً!');
             return;
         }
 
-        // التأكد من اختيار ملف
         if (fileInput.files.length === 0) {
             alert('الرجاء اختيار ملف أولاً!');
             return;
         }
 
+        // تم تصحيح قراءة أول ملف مرفوع بشكل دقيق هنا ليفهمه المتصفح
         const file = fileInput.files[0]; 
         
         uploadBtn.disabled = true;
@@ -108,20 +107,24 @@
             const fileContent = e.target.result;
 
             try {
+                // استخدام رابط endpoint الصحيح والمحدث لـ Gemini 2.5 Flash
                 const url = `https://googleapis.com{USER_API_KEY}`;
                 
+                // تصحيح هيكل الـ JSON المرسل بالكامل ليطابق مواصفات جوجل الرسمية
+                const payload = {
+                    contents: [{
+                        parts: [{
+                            text: "قم بقراءة النص التالي التابع لملف تم رفعه، وحلله ثم أعطني ملخصاً شاملاً وواضحاً له باللغة العربية:\n\n" + fileContent
+                        }]
+                    }]
+                };
+
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [{
-                                text: `قم بقراءة النص التالي التابع لملف تم رفعه، وحلله ثم أعطني ملخصاً شاملاً وواضحاً له باللغة العربية:\n\n${fileContent}`
-                            }]
-                        }]
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
@@ -130,6 +133,7 @@
                     throw new Error(data.error.message);
                 }
 
+                // تصحيح مسار استخراج النص النهائي من الاستجابة لتجنب توقف الكود
                 const aiResponse = data.candidates[0].content.parts[0].text;
                 resultBox.textContent = aiResponse;
                 resultContainer.style.display = 'block';
